@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToolHub Admin — Coin Code Generator</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{padding-top:22px}
+  .admin-wrap{max-width:720px;margin:0 auto;padding:0 20px 60px;position:relative;z-index:2}
+  .admin-title{font-size:1.6rem;font-weight:800;color:var(--gold);text-align:center;margin-bottom:6px}
+  .admin-sub{text-align:center;color:var(--dim);font-size:.82rem;margin-bottom:22px}
+  .admin-card{background:linear-gradient(160deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px}
+  .admin-card h3{font-size:.95rem;color:var(--neon);margin-bottom:12px;letter-spacing:1px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row > .field{flex:1;min-width:140px;margin-bottom:12px}
+  .code-list{margin-top:10px;max-height:320px;overflow:auto}
+  .code-item{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 14px;border-radius:10px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);margin-bottom:8px;font-size:.82rem}
+  .code-item .cd{font-family:monospace;color:var(--neon);font-weight:800;letter-spacing:1px}
+  .code-item .amt{color:var(--gold);font-weight:700}
+  .code-item .act{display:flex;gap:6px}
+  .code-item button{background:transparent;border:1px solid var(--line);color:var(--dim);
+    padding:4px 8px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:inherit}
+  .code-item button:hover{border-color:var(--warn);color:var(--warn)}
+  .used-badge{font-size:.66rem;color:var(--ok);border:1px solid rgba(0,255,163,.4);
+    padding:2px 8px;border-radius:999px;background:rgba(0,255,163,.08)}
+</style>
+</head>
+<body>
+<div class="admin-wrap">
+  <div class="admin-title">🔐 Admin Panel — Coin Code Generator</div>
+  <div class="admin-sub">Generate kode redeem coin untuk user ToolHub · by FebzTzy</div>
+
+  <div class="admin-card">
+    <h3>➕ BUAT KODE BARU</h3>
+    <div class="row">
+      <div class="field"><label>Jumlah Coin</label><input type="number" id="genCoins" value="10"></div>
+      <div class="field"><label>Jumlah Kode</label><input type="number" id="genQty" value="1"></div>
+      <div class="field"><label>Prefix</label><input type="text" id="genPrefix" value="FEBZ"></div>
+    </div>
+    <div class="btn-row" style="margin-top:6px">
+      <button class="btn btn-primary" id="genBtn">🎟️ Generate</button>
+      <button class="btn btn-ghost" id="clearBtn">🗑️ Hapus Semua</button>
+    </div>
+    <div class="result" id="genResult"></div>
+  </div>
+
+  <div class="admin-card">
+    <h3>📋 DAFTAR KODE</h3>
+    <div class="code-list" id="codeList"></div>
+  </div>
+</div>
+<script src="admin.js"></script>
+</body>
+</html>
