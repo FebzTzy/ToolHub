@@ -3,7 +3,7 @@
    POST { action:create|delete|clear }
    BUTUH header X-Admin-Token
 */
-const ADMIN_TOKEN = "FEBZ-ADMIN-2026";
+const ADMIN_TOKEN = "FEBZ-OWNER-6651";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
