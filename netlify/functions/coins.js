@@ -32,7 +32,11 @@ exports.handler = async (event) => {
   const store = getStore("toolhub");
   const userKey = "user:" + userId;
 
-  let user = await store.get(userKey, { type:"json" }) || { coins:0, lastCheckin:0 };
+let user = await store.get(userKey, { type:"json" });
+if(!user){
+  user = { coins:0, lastCheckin:0, createdAt: Date.now() };
+  await store.setJSON(userKey, user);
+}
 
   try{
     if(action === "get"){
