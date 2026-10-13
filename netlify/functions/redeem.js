@@ -1,21 +1,21 @@
 /* Endpoint: /api/redeem
    GET → list kode
-   POST { action:create, coins, qty, prefix }
-   POST { action:delete, code }
-   POST { action:clear }
-   BUTUH header X-Admin-Token yang cocok dengan ADMIN_TOKEN di file ini
+   POST { action:create|delete|clear }
+   BUTUH header X-Admin-Token
 */
-const { getStore } = require("@netlify/blobs");
-
-const ADMIN_TOKEN = "FEBZ-OWNER-6651"; // ganti kalau mau
+const ADMIN_TOKEN = "FEBZ-ADMIN-2026";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token"
 };
+
 function ok(data){ return { statusCode:200, headers:{ ...CORS, "Content-Type":"application/json" }, body: JSON.stringify(data) }; }
 function err(msg, code){ return { statusCode: code||400, headers:{ ...CORS, "Content-Type":"application/json" }, body: JSON.stringify({ error: msg }) }; }
+
+/* --- in-memory store (ephemeral, cukup buat test) --- */
+let CODES = {};  // { KODE: { coins, used, createdAt } }
 
 function randSeg(n){
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -25,59 +25,50 @@ function randSeg(n){
 }
 
 exports.handler = async (event) => {
-  if(event.httpMethod === "OPTIONS") return { statusCode:200, headers:CORS, body:"" };
+  try {
+    if(event.httpMethod === "OPTIONS") return { statusCode:200, headers:CORS, body:"" };
 
-  const token = event.headers["x-admin-token"] || event.headers["X-Admin-Token"];
-  if(token !== ADMIN_TOKEN) return err("token admin salah", 401);
+    const token = event.headers["x-admin-token"] || event.headers["X-Admin-Token"];
+    if(token !== ADMIN_TOKEN) return err("token admin salah", 401);
 
-  const store = getStore("toolhub");
-
-  if(event.httpMethod === "GET"){
-    const { blobs } = await store.list({ prefix: "code:" });
-    const codes = [];
-    for(const b of blobs){
-      const data = await store.get(b.key, { type:"json" });
-      if(data) codes.push(Object.assign({ code: b.key.replace(/^code:/,"") }, data));
+    if(event.httpMethod === "GET"){
+      const list = Object.entries(CODES).map(([code, meta]) => ({ code, ...meta }));
+      return ok({ codes: list });
     }
-    return ok({ codes });
-  }
 
-  if(event.httpMethod === "POST"){
-    let body = {};
-    try{ body = JSON.parse(event.body || "{}"); }catch{}
-    const { action } = body;
+    if(event.httpMethod === "POST"){
+      let body = {};
+      try{ body = JSON.parse(event.body || "{}"); }catch{}
+      const { action } = body;
 
-    if(action === "create"){
-      const coins  = Math.max(1, parseInt(body.coins)||0);
-      const qty    = Math.max(1, Math.min(50, parseInt(body.qty)||1));
-      const prefix = String(body.prefix||"FEBZ").toUpperCase().replace(/[^A-Z0-9]/g,"") || "FEBZ";
-      const made = [];
-      for(let i=0;i<qty;i++){
-        let code;
-        let exists = true;
-        while(exists){
-          code = prefix+"-"+randSeg(4)+"-"+randSeg(4);
-          const cur = await store.get("code:"+code, { type:"json" });
-          exists = !!cur;
+      if(action === "create"){
+        const coins  = Math.max(1, parseInt(body.coins)||0);
+        const qty    = Math.max(1, Math.min(50, parseInt(body.qty)||1));
+        const prefix = String(body.prefix||"FEBZ").toUpperCase().replace(/[^A-Z0-9]/g,"") || "FEBZ";
+        const made = [];
+        for(let i=0;i<qty;i++){
+          let code;
+          do { code = prefix+"-"+randSeg(4)+"-"+randSeg(4); } while(CODES[code]);
+          CODES[code] = { coins, used:false, createdAt: Date.now() };
+          made.push(code);
         }
-        await store.setJSON("code:"+code, { coins, used:false, createdAt: Date.now() });
-        made.push(code);
+        return ok({ created: made });
       }
-      return ok({ created: made });
+
+      if(action === "delete"){
+        const c = String(body.code||"").toUpperCase();
+        delete CODES[c];
+        return ok({ deleted: c });
+      }
+
+      if(action === "clear"){
+        CODES = {};
+        return ok({ cleared: true });
+      }
     }
 
-    if(action === "delete"){
-      const code = String(body.code||"").toUpperCase();
-      await store.delete("code:"+code);
-      return ok({ deleted: code });
-    }
-
-    if(action === "clear"){
-      const { blobs } = await store.list({ prefix: "code:" });
-      for(const b of blobs) await store.delete(b.key);
-      return ok({ cleared: true });
-    }
+    return err("bad request");
+  } catch (e) {
+    return { statusCode:500, headers:{ ...CORS, "Content-Type":"application/json" }, body: JSON.stringify({ error: e.message, stack: e.stack }) };
   }
-
-  return err("bad request");
 };
