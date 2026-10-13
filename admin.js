@@ -1,15 +1,17 @@
-/* Admin panel — panggil Netlify Function */
+/* Admin panel — pakai action admin-* di /api/coins */
 
-const ADMIN_TOKEN = "FEBZ-OWNER-6651"; // HARUS sama dengan di netlify/functions/redeem.js
-const API_BASE = "/api";
+const ADMIN_TOKEN = "FEBZ-OWNER-8505";
+const API = "/api/coins";
 
-async function req(path, opts){
-  const res = await fetch(API_BASE + path, Object.assign({
+async function adminReq(action, extra){
+  const res = await fetch(API, {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-Admin-Token": ADMIN_TOKEN
-    }
-  }, opts||{}));
+    },
+    body: JSON.stringify(Object.assign({ action }, extra||{}))
+  });
   const data = await res.json().catch(()=>({}));
   if(!res.ok) throw new Error(data.error || ("HTTP "+res.status));
   return data;
@@ -20,7 +22,7 @@ async function renderList(){
   if(!list) return;
   list.innerHTML = '<div style="color:var(--dim);text-align:center;padding:16px">Memuat...</div>';
   try{
-    const d = await req("/redeem", { method:"GET" });
+    const d = await adminReq("admin-list");
     const codes = (d.codes || []).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     if(codes.length === 0){
       list.innerHTML = '<div style="color:var(--dim);font-size:.82rem;text-align:center;padding:20px">Belum ada kode.</div>';
@@ -52,7 +54,7 @@ async function renderList(){
       b.onclick = async () => {
         if(!confirm("Hapus kode "+b.dataset.del+"?")) return;
         try{
-          await req("/redeem", { method:"POST", body: JSON.stringify({ action:"delete", code:b.dataset.del }) });
+          await adminReq("admin-delete", { code: b.dataset.del });
           renderList();
         }catch(e){ alert("Gagal hapus: "+e.message); }
       };
@@ -70,10 +72,7 @@ document.getElementById("genBtn").onclick = async () => {
   res.className = "result show";
   res.innerHTML = "<pre>Membuat "+qty+" kode...</pre>";
   try{
-    const d = await req("/redeem", {
-      method:"POST",
-      body: JSON.stringify({ action:"create", coins, qty, prefix })
-    });
+    const d = await adminReq("admin-create", { coins, qty, prefix });
     res.className = "result show ok";
     res.innerHTML = "<pre>✅ "+d.created.length+" kode dibuat · "+coins+" coin per kode\n\n" + d.created.join("\n") + "</pre>";
     renderList();
@@ -86,7 +85,7 @@ document.getElementById("genBtn").onclick = async () => {
 document.getElementById("clearBtn").onclick = async () => {
   if(!confirm("Hapus SEMUA kode redeem?")) return;
   try{
-    await req("/redeem", { method:"POST", body: JSON.stringify({ action:"clear" }) });
+    await adminReq("admin-clear");
     renderList();
   }catch(e){ alert("Gagal: "+e.message); }
 };
